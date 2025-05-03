@@ -6,7 +6,7 @@ import networkx as nx
 import plotly.graph_objects as go
 import streamlit as st
 
-DATA_FILE = 'data/citation_data2.json'
+DATA_FILE = 'citation_data2.json'
 ADMIN_PASSWORD = "admin123"  # Set your admin password here
 
 # ----------------- Graph Loading & Saving -------------------
@@ -15,36 +15,21 @@ def load_graph_from_json(filename):
     display_names = {}
     paper_info = {}
     paper_links = {}
-    
-    # Check if the file exists in the correct path
-    data_path = os.path.join(os.path.dirname(__file__), filename)  # Get absolute path
-    print(f"Attempting to load data from: {data_path}")  # Log the path
-    
-    if os.path.exists(data_path):
-        try:
-            with open(data_path, 'r') as f:
-                data = json.load(f)
-                print(f"Successfully loaded JSON file. Data keys: {list(data.keys())}")
-                
-                for paper_id, info in data.get('papers', {}).items():
-                    graph.add_node(paper_id)
-                    display_names[paper_id] = info.get('title', paper_id)
-                    paper_info[paper_id] = {
-                        'author': info.get('author', 'Unknown'),
-                        'year': info.get('year', 'Unknown')
-                    }
-                    paper_links[paper_id] = info.get('url', '')
-                    
-                for paper_id, cited_ids in data.get('citations', {}).items():
-                    for cited_id in cited_ids:
-                        graph.add_edge(paper_id, cited_id)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON file {data_path}: {e}")
-    else:
-        print(f"Error: JSON file not found at {data_path}")
-    
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            data = json.load(f)
+            for paper_id, info in data.get('papers', {}).items():
+                graph.add_node(paper_id)
+                display_names[paper_id] = info.get('title', paper_id)
+                paper_info[paper_id] = {
+                    'author': info.get('author', 'Unknown'),
+                    'year': info.get('year', 'Unknown')
+                }
+                paper_links[paper_id] = info.get('url', '')
+            for paper_id, cited_ids in data.get('citations', {}).items():
+                for cited_id in cited_ids:
+                    graph.add_edge(paper_id, cited_id)
     return graph, display_names, paper_info, paper_links
-
 
 def save_graph_to_json(graph, display_names, paper_info, paper_links, filename):
     data = {'papers': {}, 'citations': {}}
@@ -56,10 +41,6 @@ def save_graph_to_json(graph, display_names, paper_info, paper_links, filename):
             'url': paper_links[node]
         }
         data['citations'][node] = list(graph.successors(node))
-    
-    # Create directories if they don't exist
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    
     with open(filename, 'w') as f:
         json.dump(data, f, indent=2)
 
@@ -197,130 +178,117 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
     return fig
 
 # ----------------- Streamlit UI -------------------
-def main():
-    st.set_page_config(layout='wide', page_title="Citagraph 2.0")
-    st.title("Citagraph 2.0")
+st.set_page_config(layout='wide')
+st.title("Citagraph 2.0")
 
-    # Ask for password only if admin mode is selected
-    viewer_option = st.sidebar.radio("Proceed as Viewer", ["Observer Mode", "Admin Mode"])
+# Ask for password only if admin mode is selected
+viewer_option = st.sidebar.radio("Proceed as Viewer", ["Observer Mode", "Admin Mode"])
 
-    if viewer_option == "Admin Mode":
-        # Display password box only when Admin Mode is selected
-        password = st.sidebar.text_input("Enter Admin Password:", type="password")
-        if password == ADMIN_PASSWORD:
-            is_admin = True
-            st.sidebar.success("You are now in Admin Mode.")
-        else:
-            is_admin = False
-            if password:
-                st.sidebar.error("Invalid password. Please try again.")
+if viewer_option == "Admin Mode":
+    # Display password box only when Admin Mode is selected
+    password = st.text_input("Enter Admin Password:", type="password")
+    if password == ADMIN_PASSWORD:
+        is_admin = True
+        st.sidebar.success("You are now in Admin Mode.")
     else:
         is_admin = False
-        st.sidebar.success("Observer Mode.")
+        if password:
+            st.sidebar.error("Invalid password. Please try again.")
+else:
+    is_admin = False
+    st.sidebar.success("Observer Mode.")
 
-    # Load Graph Data
-    graph, display_names, paper_info, paper_links = load_graph_from_json(DATA_FILE)
+# Load Graph Data
+graph, display_names, paper_info, paper_links = load_graph_from_json(DATA_FILE)
 
-    # Sidebar: Admin Controls (Visible only in Admin Mode)
-    if is_admin:
-        with st.sidebar.expander("Add New Paper"):
-            new_id = st.text_input("Paper ID")
-            new_title = st.text_input("Title")
-            new_author = st.text_input("Author")
-            new_year = st.text_input("Year")
-            new_url = st.text_input("URL")
-            if st.button("Add Paper") and new_id:
-                graph.add_node(new_id)
-                display_names[new_id] = new_title
-                paper_info[new_id] = {'author': new_author, 'year': new_year}
-                paper_links[new_id] = new_url
+# Sidebar: Admin Controls (Visible only in Admin Mode)
+if is_admin:
+    with st.sidebar.expander("Add New Paper"):
+        new_id = st.text_input("Paper ID")
+        new_title = st.text_input("Title")
+        new_author = st.text_input("Author")
+        new_year = st.text_input("Year")
+        new_url = st.text_input("URL")
+        if st.button("Add Paper") and new_id:
+            graph.add_node(new_id)
+            display_names[new_id] = new_title
+            paper_info[new_id] = {'author': new_author, 'year': new_year}
+            paper_links[new_id] = new_url
+            save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+            st.success(f"Added {new_id}")
+
+    with st.sidebar.expander("Edit/Delete Paper"):
+        selected_id = st.selectbox("Select Paper to Edit/Delete", list(graph.nodes))
+        if selected_id:
+            display_names[selected_id] = st.text_input("Edit Title", value=display_names[selected_id])
+            paper_info[selected_id]['author'] = st.text_input("Edit Author", value=paper_info[selected_id]['author'])
+            paper_info[selected_id]['year'] = st.text_input("Edit Year", value=paper_info[selected_id]['year'])
+            paper_links[selected_id] = st.text_input("Edit URL", value=paper_links[selected_id])
+            if st.button("Save Changes"):
                 save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                st.success(f"Added {new_id}")
+                st.success("Changes saved")
+            if st.button("Delete Paper"):
+                graph.remove_node(selected_id)
+                display_names.pop(selected_id, None)
+                paper_info.pop(selected_id, None)
+                paper_links.pop(selected_id, None)
+                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+                st.success("Paper deleted")
 
-        with st.sidebar.expander("Edit/Delete Paper"):
-            if graph.number_of_nodes() > 0:
-                selected_id = st.selectbox("Select Paper to Edit/Delete", list(graph.nodes))
-                if selected_id:
-                    display_names[selected_id] = st.text_input("Edit Title", value=display_names[selected_id])
-                    paper_info[selected_id]['author'] = st.text_input("Edit Author", value=paper_info[selected_id]['author'])
-                    paper_info[selected_id]['year'] = st.text_input("Edit Year", value=paper_info[selected_id]['year'])
-                    paper_links[selected_id] = st.text_input("Edit URL", value=paper_links[selected_id])
-                    if st.button("Save Changes"):
-                        save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                        st.success("Changes saved")
-                    if st.button("Delete Paper"):
-                        graph.remove_node(selected_id)
-                        display_names.pop(selected_id, None)
-                        paper_info.pop(selected_id, None)
-                        paper_links.pop(selected_id, None)
-                        save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                        st.success("Paper deleted")
+    with st.sidebar.expander("Edit Citations"):
+        source_paper = st.selectbox("Select Source Paper", list(graph.nodes))
+        target_paper = st.selectbox("Select Target Paper", list(graph.nodes))
+        if st.button("Add Citation"):
+            if not graph.has_edge(source_paper, target_paper):
+                graph.add_edge(source_paper, target_paper)
+                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+                st.success(f"Added citation from {source_paper} to {target_paper}")
             else:
-                st.sidebar.info("No papers to edit. Add papers first.")
-
-        with st.sidebar.expander("Edit Citations"):
-            if graph.number_of_nodes() >= 2:
-                source_paper = st.selectbox("Select Source Paper", list(graph.nodes))
-                target_paper = st.selectbox("Select Target Paper", list(graph.nodes))
-                if st.button("Add Citation"):
-                    if source_paper != target_paper:
-                        if not graph.has_edge(source_paper, target_paper):
-                            graph.add_edge(source_paper, target_paper)
-                            save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                            st.success(f"Added citation from {source_paper} to {target_paper}")
-                        else:
-                            st.warning(f"Citation already exists from {source_paper} to {target_paper}")
-                    else:
-                        st.warning("Cannot add self-citation")
-                if st.button("Remove Citation"):
-                    if graph.has_edge(source_paper, target_paper):
-                        graph.remove_edge(source_paper, target_paper)
-                        save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                        st.success(f"Removed citation from {source_paper} to {target_paper}")
-                    else:
-                        st.warning(f"No citation exists from {source_paper} to {target_paper}")
+                st.warning(f"Citation already exists from {source_paper} to {target_paper}")
+        if st.button("Remove Citation"):
+            if graph.has_edge(source_paper, target_paper):
+                graph.remove_edge(source_paper, target_paper)
+                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+                st.success(f"Removed citation from {source_paper} to {target_paper}")
             else:
-                st.sidebar.info("Need at least two papers to create citations.")
+                st.warning(f"No citation exists from {source_paper} to {target_paper}")
 
-    # Sidebar: Graph Display Settings (Visible for both Admin and Viewer)
-    with st.sidebar.expander("Graph Display Settings", expanded=True):
-        layout_choice = st.radio("Layout", ["spring", "circular", "kamada-kawai", "random", "fruchterman-reingold"])
-        color_mode = st.radio("Color Nodes By", ["author", "decade"])
+# Sidebar: Graph Display Settings (Visible for both Admin and Viewer)
+with st.sidebar.expander("Graph Display Settings", expanded=True):
+    layout_choice = st.radio("Layout", ["spring", "circular", "kamada-kawai", "random", "fruchterman-reingold"])
+    color_mode = st.radio("Color Nodes By", ["author", "decade"])
 
-    # Main Graph
-    if graph.number_of_nodes() == 0:
-        st.warning("No data in graph. Add papers using the sidebar in Admin mode.")
-    else:
-        fig = draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mode)
-        st.plotly_chart(fig, use_container_width=True, height=800, config={'displayModeBar': False})
+# Main Graph
+if graph.number_of_nodes() == 0:
+    st.warning("No data in graph. Add papers using the sidebar.")
+else:
+    fig = draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mode)
+    st.plotly_chart(fig, use_container_width=True, height=800, config={'displayModeBar': False})
 
-    # ----------------- Show Paper Information -------------------
-    st.subheader("Paper Library")
+# ----------------- Show Paper Information -------------------
+st.subheader("Paper Library")
 
-    # Create a DataFrame for papers
-    papers_data = []
-    for paper_id in graph.nodes:
-        papers_data.append({
-            "Paper ID": paper_id,
-            "Title": display_names.get(paper_id, "Unknown"),
-            "Author": paper_info.get(paper_id, {}).get('author', "Unknown"),
-            "Year": paper_info.get(paper_id, {}).get('year', "Unknown"),
-            "URL": paper_links.get(paper_id, "N/A")
-        })
+# Create a DataFrame for papers
+papers_data = []
+for paper_id in graph.nodes:
+    papers_data.append({
+        "Paper ID": paper_id,
+        "Title": display_names.get(paper_id, "Unknown"),
+        "Author": paper_info.get(paper_id, {}).get('author', "Unknown"),
+        "Year": paper_info.get(paper_id, {}).get('year', "Unknown"),
+        "URL": paper_links.get(paper_id, "N/A")
+    })
 
-    # Convert to Pandas DataFrame for custom styling
-    if papers_data:
-        df = pd.DataFrame(papers_data)
-        df_reset = df.reset_index(drop=True)
-        st.dataframe(df_reset.style.set_table_styles(
-            [
-                {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', 'bold')]},
-                {'selector': 'td', 'props': [('text-align', 'center'), ('padding', '5px')]},
-                {'selector': 'table', 'props': [('width', '100%')]},
-            ]
-        ), use_container_width=True)
-    else:
-        st.write("No papers available.")
-
-if __name__ == "__main__":
-    main()
+# Convert to Pandas DataFrame for custom styling
+if papers_data:
+    df = pd.DataFrame(papers_data)
+    df_reset = df.reset_index(drop=True)
+    st.dataframe(df_reset.style.set_table_styles(
+        [
+            {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', 'bold')]},
+            {'selector': 'td', 'props': [('text-align', 'center'), ('padding', '5px')]},
+            {'selector': 'table', 'props': [('width', '100%')]},
+        ]
+    ), use_container_width=True)
+else:
+    st.write("No papers available.")
