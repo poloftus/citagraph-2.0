@@ -15,21 +15,36 @@ def load_graph_from_json(filename):
     display_names = {}
     paper_info = {}
     paper_links = {}
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
-            data = json.load(f)
-            for paper_id, info in data.get('papers', {}).items():
-                graph.add_node(paper_id)
-                display_names[paper_id] = info.get('title', paper_id)
-                paper_info[paper_id] = {
-                    'author': info.get('author', 'Unknown'),
-                    'year': info.get('year', 'Unknown')
-                }
-                paper_links[paper_id] = info.get('url', '')
-            for paper_id, cited_ids in data.get('citations', {}).items():
-                for cited_id in cited_ids:
-                    graph.add_edge(paper_id, cited_id)
+    
+    # Check if the file exists in the correct path
+    data_path = os.path.join(os.path.dirname(__file__), filename)  # Get absolute path
+    print(f"Attempting to load data from: {data_path}")  # Log the path
+    
+    if os.path.exists(data_path):
+        try:
+            with open(data_path, 'r') as f:
+                data = json.load(f)
+                print(f"Successfully loaded JSON file. Data keys: {list(data.keys())}")
+                
+                for paper_id, info in data.get('papers', {}).items():
+                    graph.add_node(paper_id)
+                    display_names[paper_id] = info.get('title', paper_id)
+                    paper_info[paper_id] = {
+                        'author': info.get('author', 'Unknown'),
+                        'year': info.get('year', 'Unknown')
+                    }
+                    paper_links[paper_id] = info.get('url', '')
+                    
+                for paper_id, cited_ids in data.get('citations', {}).items():
+                    for cited_id in cited_ids:
+                        graph.add_edge(paper_id, cited_id)
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON file {data_path}: {e}")
+    else:
+        print(f"Error: JSON file not found at {data_path}")
+    
     return graph, display_names, paper_info, paper_links
+
 
 def save_graph_to_json(graph, display_names, paper_info, paper_links, filename):
     data = {'papers': {}, 'citations': {}}
