@@ -216,7 +216,7 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
 
 # ----------------- Streamlit UI -------------------
 st.set_page_config(layout='wide')
-st.title("Citagraph 3.0")
+st.title("Citagraph3")
 
 # Ask for password only if admin mode is selected
 viewer_option = st.sidebar.radio("Proceed as Viewer", ["Observer Mode", "Admin Mode"])
