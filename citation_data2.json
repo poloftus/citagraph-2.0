@@ -84,12 +84,6 @@
       "year": "1988",
       "url": "https://pubs.acs.org/doi/10.1021/ci00057a005"
     },
-    "0015": {
-      "title": "Synthetic popularity reflects chemical reactivity",
-      "author": "Grzybowski",
-      "year": "2009",
-      "url": "https://onlinelibrary.wiley.com/doi/10.1002/poc.1535"
-    },
     "0016": {
       "title": "From Knowledge-Based Potentials to Combinatorial Lead Design in Silico",
       "author": "Grzybowski",
@@ -113,6 +107,12 @@
       "author": "Waller",
       "year": "2018",
       "url": "https://pubs.acs.org/doi/full/10.1021/acscentsci.7b00512"
+    },
+    "0015": {
+      "title": "test",
+      "author": "test",
+      "year": "test",
+      "url": ""
     }
   },
   "citations": {
@@ -135,7 +135,9 @@
       "0005"
     ],
     "0005": [
-      "0001"
+      "0001",
+      "0006",
+      "0016"
     ],
     "0006": [
       "0001"
@@ -176,17 +178,13 @@
       "0009"
     ],
     "0014": [],
-    "0015": [
-      "0001",
-      "0006",
-      "0016"
-    ],
     "0016": [],
     "0017": [],
     "0018": [
       "0009",
       "0019"
     ],
-    "0019": []
+    "0019": [],
+    "0015": []
   }
 }
