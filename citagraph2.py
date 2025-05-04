@@ -6,7 +6,7 @@ import networkx as nx
 import plotly.graph_objects as go
 import streamlit as st
 
-DATA_FILE = 'citation_data2.json'
+DATA_FILE = 'citation_data3.json'
 ADMIN_PASSWORD = "admin123"  # Set your admin password here
 
 # ----------------- Graph Loading & Saving -------------------
@@ -64,6 +64,43 @@ def get_author_color(author, color_map):
     color = next(author_color_cycle)
     color_map[author] = color
     return color
+
+def display_paper_table(paper_data):
+    df = pd.DataFrame(paper_data).copy()
+
+    # Ensure required columns exist
+    for col in ['id', 'title', 'author', 'year', 'decade', 'link']:
+        if col not in df.columns:
+            df[col] = ""
+
+    # Safely convert links to HTML
+    df['link'] = df['link'].apply(lambda url: f'<a href="{url}" target="_blank">Link</a>' if isinstance(url, str) and url and url != "N/A" else "")
+
+    df = df[['id', 'title', 'author', 'year', 'decade', 'link']]
+    st.markdown("### 📚 Paper Library")
+    st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+
+def filter_papers(df):
+    st.sidebar.markdown("### 🔍 Filter Papers")
+
+    # Define filterable fields and their input types
+    filters = {
+        "title": st.sidebar.text_input("Search by Title"),
+        "author": st.sidebar.text_input("Search by Author"),
+        "year": st.sidebar.text_input("Search by Year"),
+        "decade": st.sidebar.text_input("Search by Decade"),
+    }
+
+    # Apply filters dynamically
+    filtered_df = df.copy()
+    for field, query in filters.items():
+        if query:
+            filtered_df = filtered_df[filtered_df[field].astype(str).str.contains(query, case=False, na=False)]
+
+    return filtered_df
+
+
 
 # ----------------- Graph Plotting -------------------
 def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mode):
@@ -179,7 +216,7 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
 
 # ----------------- Streamlit UI -------------------
 st.set_page_config(layout='wide')
-st.title("Citagraph 2.0")
+st.title("Citagraph 3.0")
 
 # Ask for password only if admin mode is selected
 viewer_option = st.sidebar.radio("Proceed as Viewer", ["Observer Mode", "Admin Mode"])
@@ -204,18 +241,35 @@ graph, display_names, paper_info, paper_links = load_graph_from_json(DATA_FILE)
 # Sidebar: Admin Controls (Visible only in Admin Mode)
 if is_admin:
     with st.sidebar.expander("Add New Paper"):
-        new_id = st.text_input("Paper ID")
+        new_id_input = st.text_input("Paper ID (leave blank to auto-assign)")
         new_title = st.text_input("Title")
         new_author = st.text_input("Author")
         new_year = st.text_input("Year")
         new_url = st.text_input("URL")
-        if st.button("Add Paper") and new_id:
+
+        if st.button("Add Paper"):
+            # Auto-generate Paper ID if no ID is provided
+            if new_id_input.strip() == "":
+                # Find the next available numeric ID by checking existing papers and assigning a formatted ID
+                existing_ids = {str(id) for id in graph.nodes}
+                i = 1
+                while f"{i:04d}" in existing_ids:  # Use 4-digit format with leading zeros
+                    i += 1
+                new_id = f"{i:04d}"  # Generate the ID in the same format as existing ones
+            else:
+                new_id = new_id_input.strip()
+
+            # Now add the paper with the appropriate ID
             graph.add_node(new_id)
             display_names[new_id] = new_title
             paper_info[new_id] = {'author': new_author, 'year': new_year}
             paper_links[new_id] = new_url
             save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-            st.success(f"Added {new_id}")
+            st.success(f"Added paper '{new_title}' with ID {new_id}")
+
+
+
+
 
     with st.sidebar.expander("Edit/Delete Paper"):
         selected_id = st.selectbox("Select Paper to Edit/Delete", list(graph.nodes))
@@ -272,23 +326,24 @@ st.subheader("Paper Library")
 papers_data = []
 for paper_id in graph.nodes:
     papers_data.append({
-        "Paper ID": paper_id,
-        "Title": display_names.get(paper_id, "Unknown"),
-        "Author": paper_info.get(paper_id, {}).get('author', "Unknown"),
-        "Year": paper_info.get(paper_id, {}).get('year', "Unknown"),
-        "URL": paper_links.get(paper_id, "N/A")
+        "id": paper_id,
+        "title": display_names.get(paper_id, "Unknown"),
+        "author": paper_info.get(paper_id, {}).get('author', "Unknown"),
+        "year": paper_info.get(paper_id, {}).get('year', "Unknown"),
+        "link": paper_links.get(paper_id, "N/A")
     })
 
-# Convert to Pandas DataFrame for custom styling
 if papers_data:
     df = pd.DataFrame(papers_data)
-    df_reset = df.reset_index(drop=True)
-    st.dataframe(df_reset.style.set_table_styles(
-        [
-            {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', 'bold')]},
-            {'selector': 'td', 'props': [('text-align', 'center'), ('padding', '5px')]},
-            {'selector': 'table', 'props': [('width', '100%')]},
-        ]
-    ), use_container_width=True)
+    df["decade"] = df["year"].apply(lambda y: f"{(int(y)//10)*10}s" if str(y).isdigit() else "Unknown")
+
+    # Apply sidebar filters
+    filtered_df = filter_papers(df)
+
+    # Show table
+    display_paper_table(filtered_df.to_dict(orient='records'))
 else:
     st.write("No papers available.")
+
+
+
