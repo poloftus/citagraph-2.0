@@ -1,190 +1,307 @@
 {
   "papers": {
-    "0001": {
-      "title": "Architecture and Evolution of Organic Chemistry",
-      "author": "Grzybowski",
-      "year": "2005",
-      "url": "https://onlinelibrary.wiley.com/doi/10.1002/anie.200502272"
-    },
-    "0002": {
-      "title": "Chemical Network Algorithms for the Risk Assessment and Management of Chemical Threats",
-      "author": "Grzybowski",
-      "year": "2012",
-      "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/anie.201202210"
-    },
-    "0003": {
-      "title": "Parallel Optimization of Synthetic Pathways within the Network of Organic Chemistry",
-      "author": "Grzybowski",
-      "year": "2012",
-      "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/anie.201202209"
-    },
-    "0004": {
-      "title": "Rewiring Chemistry: Algorithmic Discovery and Experimental Validation of One-Pot Reactions in the Network of Organic Chemistry",
-      "author": "Grzybowski",
-      "year": "2012",
-      "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/anie.201202155"
-    },
-    "0005": {
-      "title": "Synthetic popularity reflects chemical reactivity",
-      "author": "Grzybowski",
-      "year": "2009",
-      "url": "https://onlinelibrary.wiley.com/doi/10.1002/poc.1535"
-    },
-    "0006": {
+    "10.1002/anie.200600881": {
       "title": "The Core and Most Useful Molecules in Organic Chemistry",
-      "author": "Grzybowski",
+      "author": "Bishop",
+      "pi": "Grzybowski",
       "year": "2006",
-      "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/anie.200600881"
+      "url": "https://doi.org/10.1002/anie.200600881"
     },
-    "0007": {
-      "title": "The \u00e2\u20ac\u02dcwired\u00e2\u20ac\u2122 universe of organic chemistry",
-      "author": "Grzybowski",
-      "year": "2009",
-      "url": "https://www.nature.com/articles/nchem.136"
-    },
-    "0008": {
-      "title": "Modelling Chemical Reasoning to Predict and Invent Reactions",
-      "author": "Waller",
-      "year": "2017",
-      "url": "https://chemistry-europe.onlinelibrary.wiley.com/doi/full/10.1002/chem.201604556"
-    },
-    "0009": {
-      "title": "Neural-Symbolic Machine Learning for Retrosynthesis and Reaction Prediction",
-      "author": "Waller",
-      "year": "2017",
-      "url": "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201605499"
-    },
-    "0010": {
-      "title": "Computer-Assisted Synthetic Planning: The End of the Beginning",
-      "author": "Grzybowski",
-      "year": "2016",
-      "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/anie.201506101"
-    },
-    "0011": {
-      "title": "Shenvi Group Meeting: Computer Aided Retrosynthesis",
-      "author": "Huffman",
-      "year": "2017",
-      "url": "https://shenvilab.org/seminars/UpdatedCARGM"
-    },
-    "0012": {
-      "title": "An eight-step synthesis of epicolactone reveals its biosynthetic origin",
-      "author": "Trauner",
-      "year": "2015",
-      "url": "https://www.nature.com/articles/nchem.2336"
-    },
-    "0013": {
-      "title": "Route Design in the 21st Century The ICSYNTH Software Tool as anIdea Generator for Synthesis Prediction",
-      "author": "AstraZeneca",
-      "year": "2015",
-      "url": "https://pubs.acs.org/doi/full/10.1021/op500373e"
-    },
-    "0014": {
-      "title": "SMILES- a Chemical Language and Information System. 1. Introduction to Methodology and Encoding Rules",
-      "author": "Weininger",
-      "year": "1988",
-      "url": "https://pubs.acs.org/doi/10.1021/ci00057a005"
-    },
-    "0016": {
+    "10.1021/ar970146b": {
       "title": "From Knowledge-Based Potentials to Combinatorial Lead Design in Silico",
       "author": "Grzybowski",
+      "pi": "Shakhnovich",
       "year": "2002",
-      "url": "https://pubs.acs.org/doi/10.1021/ar970146b"
+      "url": "https://doi.org/10.1021/ar970146b"
     },
-    "0017": {
-      "title": "Biomimetic Synthesis of the Calcineurin Phosphatase Inhibitor",
-      "author": "Trauner",
+    "10.1002/anie.200502272": {
+      "title": "Architecture and Evolution of Organic Chemistry",
+      "author": "Fialkowski",
+      "pi": "Grzybowski",
+      "year": "2005",
+      "url": "https://doi.org/10.1002/anie.200502272"
+    },
+    "10.1126/science.166.3902.178": {
+      "title": "Computer-Assisted Design of Complex Organic Syntheses",
+      "author": "Wipke",
+      "pi": "Corey",
+      "year": "1969",
+      "url": "https://doi.org/10.1126/science.166.3902.178"
+    },
+    "10.1002/anie.201506101": {
+      "title": "Computer\u2010Assisted Synthetic Planning: The End of the Beginning",
+      "author": "Szymku\u0107",
+      "pi": "Grzybowski",
+      "year": "2016",
+      "url": "https://doi.org/10.1002/anie.201506101"
+    },
+    "10.1002/poc.1535": {
+      "title": "Synthetic popularity reflects chemical reactivity",
+      "author": "Kowalczyk",
+      "pi": "Grzybowski",
+      "year": "2009",
+      "url": "https://doi.org/10.1002/poc.1535"
+    },
+    "10.1038/nchem.136": {
+      "title": "The 'wired' universe of organic chemistry",
+      "author": "Wilmer",
+      "pi": "Grzybowski",
+      "year": "2009",
+      "url": "https://doi.org/10.1038/nchem.136"
+    },
+    "10.1002/anie.201202210": {
+      "title": "Chemical Network Algorithms for the Risk Assessment and Management of Chemical Threats",
+      "author": "Fuller",
+      "pi": "Grzybowski",
+      "year": "2012",
+      "url": "https://doi.org/10.1002/anie.201202210"
+    },
+    "10.1002/anie.201202209": {
+      "title": "Parallel Optimization of Synthetic Pathways within the Network of Organic Chemistry",
+      "author": "Kowalik",
+      "pi": "Bishop",
+      "year": "2012",
+      "url": "https://doi.org/10.1002/anie.201202209"
+    },
+    "10.1002/anie.201202155": {
+      "title": "Rewiring Chemistry: Algorithmic Discovery and Experimental Validation of One\u2010Pot Reactions in the Network of Organic Chemistry",
+      "author": "Gothard",
+      "pi": "Grzybowski",
+      "year": "2012",
+      "url": "https://doi.org/10.1002/anie.201202155"
+    },
+    "10.1002/anie.201403708": {
+      "title": "Organic Chemistry as a Language and the Implications of Chemical Linguistics for Structural and Retrosynthetic Analyses",
+      "author": "Cadeddu",
+      "pi": "Grzybowski",
       "year": "2014",
-      "url": "https://onlinelibrary.wiley.com/doi/epdf/10.1002/ange.201407088"
+      "url": "https://doi.org/10.1002/anie.201403708"
     },
-    "0018": {
-      "title": "Planning chemical syntheses with deep neural networks and symbolic AI",
-      "author": "Waller",
+    "10.1039/C8SC05611K": {
+      "title": "Selection of cost-effective yet chemically diverse pathways from the networks of computer-generated retrosynthetic plans",
+      "author": "Badowski",
+      "pi": "Grzybowski",
+      "year": "2019",
+      "url": "https://doi.org/10.1039/C8SC05611K"
+    },
+    "10.1021/acs.accounts.0c00714": {
+      "title": "Chemist Ex Machina: Advanced Synthesis Planning by Computers",
+      "author": "Molga",
+      "pi": "Grzybowski",
+      "year": "2021",
+      "url": "https://doi.org/10.1021/acs.accounts.0c00714"
+    },
+    "10.1021/op500373e": {
+      "title": "Route Design in the 21st Century: The IC<i>SYNTH</i> Software Tool as an Idea Generator for Synthesis Prediction",
+      "author": "B\u00f8gevig",
+      "pi": "Saller",
+      "year": "2015",
+      "url": "https://doi.org/10.1021/op500373e"
+    },
+    "10.1021/ci00057a005": {
+      "title": "SMILES, a chemical language and information system. 1. Introduction to methodology and encoding rules",
+      "author": "Weininger",
+      "pi": "Weininger",
+      "year": "1988",
+      "url": "https://doi.org/10.1021/ci00057a005"
+    },
+    "10.1126/science.3838594": {
+      "title": "Computer-Assisted Analysis in Organic Synthesis",
+      "author": "Rubenstein",
+      "pi": "Corey",
+      "year": "1985",
+      "url": "https://doi.org/10.1126/science.3838594"
+    },
+    "10.1371/journal.pcbi.1002380": {
+      "title": "DOGS: Reaction-Driven de novo Design of Bioactive Compounds",
+      "author": "Hartenfeller",
+      "pi": "Schneider",
+      "year": "2012",
+      "url": "https://doi.org/10.1371/journal.pcbi.1002380"
+    },
+    "10.1021/acscentsci.7b00355": {
+      "title": "Computer-Assisted Retrosynthesis Based on Molecular Similarity",
+      "author": "Coley",
+      "pi": "Jensen",
+      "year": "2017",
+      "url": "https://doi.org/10.1021/acscentsci.7b00355"
+    },
+    "10.1021/acscentsci.7b00064": {
+      "title": "Prediction of Organic Reaction Outcomes Using Machine Learning",
+      "author": "Coley",
+      "pi": "Jensen",
+      "year": "2017",
+      "url": "https://doi.org/10.1021/acscentsci.7b00064"
+    },
+    "10.1021/acs.accounts.8b00087": {
+      "title": "Machine Learning in Computer-Aided Synthesis Planning",
+      "author": "Coley",
+      "pi": "Jensen",
       "year": "2018",
-      "url": "https://www.nature.com/articles/nature25978"
+      "url": "https://doi.org/10.1021/acs.accounts.8b00087"
     },
-    "0019": {
+    "10.1021/acscentsci.8b00357": {
+      "title": "Using Machine Learning To Predict Suitable Conditions for Organic Reactions",
+      "author": "Gao",
+      "pi": "Jensen",
+      "year": "2018",
+      "url": "https://doi.org/10.1021/acscentsci.8b00357"
+    },
+    "10.1002/chem.201604556": {
+      "title": "Modelling Chemical Reasoning to Predict and Invent Reactions",
+      "author": "Segler",
+      "pi": "Waller",
+      "year": "2017",
+      "url": "https://doi.org/10.1002/chem.201604556"
+    },
+    "10.1002/chem.201605499": {
+      "title": "Neural\u2010Symbolic Machine Learning for Retrosynthesis and Reaction Prediction",
+      "author": "Segler",
+      "pi": "Waller",
+      "year": "2017",
+      "url": "https://doi.org/10.1002/chem.201605499"
+    },
+    "10.1021/acscentsci.7b00512": {
       "title": "Generating Focused Molecule Libraries for Drug Discovery with Recurrent Neural Networks",
-      "author": "Waller",
+      "author": "Segler",
+      "pi": "Waller",
       "year": "2018",
-      "url": "https://pubs.acs.org/doi/full/10.1021/acscentsci.7b00512"
+      "url": "https://doi.org/10.1021/acscentsci.7b00512"
     },
-    "0015": {
-      "title": "test",
-      "author": "test",
-      "year": "test",
-      "url": ""
+    "10.1038/nature25978": {
+      "title": "Planning chemical syntheses with deep neural networks and symbolic AI",
+      "author": "Segler",
+      "pi": "Waller",
+      "year": "2018",
+      "url": "https://doi.org/10.1038/nature25978"
     }
   },
   "citations": {
-    "0001": [],
-    "0002": [
-      "0001",
-      "0003",
-      "0004",
-      "0006",
-      "0007"
+    "10.1002/anie.200600881": [],
+    "10.1021/ar970146b": [],
+    "10.1002/anie.200502272": [],
+    "10.1126/science.166.3902.178": [],
+    "10.1002/anie.201506101": [
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881",
+      "10.1126/science.166.3902.178",
+      "10.1021/ar970146b"
     ],
-    "0003": [
-      "0001",
-      "0004",
-      "0005",
-      "0006",
-      "0007"
+    "10.1002/poc.1535": [
+      "10.1021/ar970146b",
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881"
     ],
-    "0004": [
-      "0005"
+    "10.1038/nchem.136": [
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881"
     ],
-    "0005": [
-      "0001",
-      "0006",
-      "0016"
+    "10.1002/anie.201202210": [
+      "10.1038/nchem.136",
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881",
+      "10.1002/poc.1535"
     ],
-    "0006": [
-      "0001"
+    "10.1002/anie.201202209": [
+      "10.1002/anie.200600881",
+      "10.1002/anie.200502272",
+      "10.1038/nchem.136",
+      "10.1002/poc.1535"
     ],
-    "0007": [
-      "0001",
-      "0006"
+    "10.1002/anie.201202155": [
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881",
+      "10.1002/poc.1535",
+      "10.1038/nchem.136",
+      "10.1002/anie.201202209",
+      "10.1002/anie.201202210"
     ],
-    "0008": [
-      "0004",
-      "0005",
-      "0007"
+    "10.1002/anie.201403708": [
+      "10.1002/anie.201202209",
+      "10.1002/anie.201202210"
     ],
-    "0009": [
-      "0010",
-      "0008"
+    "10.1039/C8SC05611K": [
+      "10.1126/science.166.3902.178",
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881",
+      "10.1038/nchem.136",
+      "10.1002/anie.201202155",
+      "10.1002/anie.201202209",
+      "10.1002/anie.201202210",
+      "10.1002/anie.201506101"
     ],
-    "0010": [
-      "0014",
-      "0001",
-      "0002",
-      "0003",
-      "0007",
-      "0004",
-      "0017"
+    "10.1021/acs.accounts.0c00714": [
+      "10.1002/anie.201506101",
+      "10.1126/science.166.3902.178",
+      "10.1002/anie.200502272",
+      "10.1002/anie.200600881",
+      "10.1038/nchem.136",
+      "10.1002/anie.201202209",
+      "10.1002/poc.1535",
+      "10.1002/anie.201202155",
+      "10.1039/C8SC05611K"
     ],
-    "0011": [
-      "0010",
-      "0012",
-      "0013",
-      "0009"
+    "10.1021/op500373e": [
+      "10.1126/science.166.3902.178"
     ],
-    "0012": [
-      "0017"
+    "10.1021/ci00057a005": [],
+    "10.1126/science.3838594": [
+      "10.1126/science.166.3902.178"
     ],
-    "0013": [
-      "0008",
-      "0009"
+    "10.1371/journal.pcbi.1002380": [],
+    "10.1021/acscentsci.7b00355": [
+      "10.1126/science.3838594",
+      "10.1021/op500373e",
+      "10.1002/anie.201506101",
+      "10.1021/ci00057a005",
+      "10.1002/anie.201403708"
     ],
-    "0014": [],
-    "0016": [],
-    "0017": [],
-    "0018": [
-      "0009",
-      "0019"
+    "10.1021/acscentsci.7b00064": [
+      "10.1126/science.166.3902.178",
+      "10.1002/anie.201506101",
+      "10.1021/op500373e"
     ],
-    "0019": [],
-    "0015": []
+    "10.1021/acs.accounts.8b00087": [
+      "10.1126/science.3838594",
+      "10.1002/anie.201506101",
+      "10.1021/op500373e",
+      "10.1021/ci00057a005",
+      "10.1021/acscentsci.7b00355",
+      "10.1021/acscentsci.7b00064"
+    ],
+    "10.1021/acscentsci.8b00357": [
+      "10.1126/science.166.3902.178",
+      "10.1021/acs.accounts.8b00087",
+      "10.1002/anie.201506101",
+      "10.1021/op500373e",
+      "10.1021/acscentsci.7b00355",
+      "10.1021/acscentsci.7b00064"
+    ],
+    "10.1002/chem.201604556": [
+      "10.1002/poc.1535",
+      "10.1002/anie.201202155",
+      "10.1038/nchem.136",
+      "10.1021/op500373e"
+    ],
+    "10.1002/chem.201605499": [
+      "10.1002/anie.201506101",
+      "10.1021/op500373e",
+      "10.1002/chem.201604556"
+    ],
+    "10.1021/acscentsci.7b00512": [
+      "10.1371/journal.pcbi.1002380",
+      "10.1002/chem.201604556",
+      "10.1002/chem.201605499",
+      "10.1021/ci00057a005"
+    ],
+    "10.1038/nature25978": [
+      "10.1021/acscentsci.7b00512",
+      "10.1002/anie.201506101",
+      "10.1021/op500373e",
+      "10.1002/chem.201605499",
+      "10.1002/chem.201604556",
+      "10.1021/acscentsci.7b00064",
+      "10.1021/acscentsci.7b00355"
+    ]
   }
 }
