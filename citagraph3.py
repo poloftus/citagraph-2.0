@@ -449,7 +449,7 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
 
 # ----------------- Streamlit UI -------------------
 st.set_page_config(layout='wide')
-st.title("Citagraph3")
+st.title("Citagraph4")
 
 # Initialize session state for click handling
 if 'clicked_node' not in st.session_state:
