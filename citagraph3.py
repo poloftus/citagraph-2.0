@@ -306,12 +306,8 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
         x, y = pos[node]
         title = display_names.get(node, node)
         
-        # Create hover text with all author information
-        author_text = f"First Author: {first_author}<br>PI: {pi}"
-        if all_authors:
-            author_text += f"<br>All Authors: {', '.join(all_authors)}"
-            
-        text = f"{title}<br>{author_text}<br>Year: {year}<br><b>Paper ID:</b> {node}"
+        # Create hover text with just first author and PI information
+        text = f"{title}<br>First Author: {first_author}<br>PI: {pi}<br>Year: {year}<br><b>Paper ID:</b> {node}"
         
         # Adjust node size and opacity based on selection
         size = 12
