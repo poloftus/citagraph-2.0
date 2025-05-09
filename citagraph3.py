@@ -5,9 +5,106 @@ import pandas as pd
 import networkx as nx
 import plotly.graph_objects as go
 import streamlit as st
+import requests
+import time
+from streamlit.components.v1 import html
 
 DATA_FILE = 'citation_data3.json'
-ADMIN_PASSWORD = "admin123"  # Set your admin password here
+
+# Initialize session state
+if 'selected_node' not in st.session_state:
+    st.session_state.selected_node = None
+
+def handle_node_click(trace, points, state):
+    if len(points.point_inds) > 0:
+        clicked_node = trace.customdata[points.point_inds[0]]
+        if clicked_node == st.session_state.selected_node:
+            st.session_state.selected_node = None
+        else:
+            st.session_state.selected_node = clicked_node
+        st.rerun()
+
+# ----------------- API Integration -------------------
+def fetch_paper_metadata(doi):
+    """Fetch paper metadata from Crossref API"""
+    try:
+        headers = {'User-Agent': 'Citagraph/1.0 (mailto:your-email@example.com)'}
+        response = requests.get(f'https://api.crossref.org/works/{doi}', headers=headers)
+        if response.status_code == 200:
+            data = response.json()['message']
+            
+            # Get authors list
+            authors = data.get('author', [])
+            first_author = authors[0].get('family', 'Unknown') if authors else 'Unknown'
+            
+            # Try to identify PI (last author)
+            pi = 'Unknown'
+            if len(authors) > 1:  # If there are multiple authors
+                pi = authors[-1].get('family', 'Unknown')  # Get last author's name
+                
+                # Check for corresponding author if available
+                for author in authors:
+                    if author.get('sequence') == 'additional' and author.get('corresponding', False):
+                        pi = author.get('family', pi)
+                        break
+            
+            return {
+                'title': data.get('title', [''])[0],
+                'author': first_author,
+                'pi': pi,
+                'year': str(data.get('published-print', {}).get('date-parts', [['']])[0][0]),
+                'url': f"https://doi.org/{doi}",
+                'references': [ref.get('DOI', '') for ref in data.get('reference', []) if ref.get('DOI')],
+                'all_authors': [f"{author.get('given', '')} {author.get('family', '')}" for author in authors]
+            }
+    except Exception as e:
+        st.error(f"Error fetching metadata: {str(e)}")
+    return None
+
+def add_paper_with_references(graph, display_names, paper_info, paper_links, doi):
+    """Add a paper and connect it to existing papers in our library that it cites"""
+    metadata = fetch_paper_metadata(doi)
+    if metadata:
+        # Add the main paper
+        paper_id = doi
+        graph.add_node(paper_id)
+        display_names[paper_id] = metadata['title']
+        
+        # Store paper information including all authors
+        paper_info[paper_id] = {
+            'author': metadata['author'],
+            'pi': metadata['pi'],
+            'year': metadata['year'],
+            'all_authors': metadata.get('all_authors', [])
+        }
+        paper_links[paper_id] = metadata['url']
+        
+        # Show author information
+        st.info(f"First Author: {metadata['author']}")
+        st.info(f"Detected PI (Last Author): {metadata['pi']}")
+        st.info(f"All Authors: {', '.join(metadata.get('all_authors', []))}")
+        
+        # Allow user to correct PI if needed
+        corrected_pi = st.text_input("Correct PI if needed:", value=metadata['pi'])
+        if corrected_pi != metadata['pi']:
+            paper_info[paper_id]['pi'] = corrected_pi
+        
+        # Check references against existing papers and add connections
+        existing_papers = set(graph.nodes())
+        citations_found = 0
+        
+        for ref_doi in metadata['references']:
+            if ref_doi in existing_papers:
+                graph.add_edge(paper_id, ref_doi)
+                citations_found += 1
+        
+        if citations_found > 0:
+            st.info(f"Found {citations_found} citation{'s' if citations_found > 1 else ''} to existing papers in the library")
+        else:
+            st.info("No citations found to existing papers in the library")
+        
+        return True
+    return None
 
 # ----------------- Graph Loading & Saving -------------------
 def load_graph_from_json(filename):
@@ -23,6 +120,7 @@ def load_graph_from_json(filename):
                 display_names[paper_id] = info.get('title', paper_id)
                 paper_info[paper_id] = {
                     'author': info.get('author', 'Unknown'),
+                    'pi': info.get('pi', 'Unknown'),
                     'year': info.get('year', 'Unknown')
                 }
                 paper_links[paper_id] = info.get('url', '')
@@ -37,6 +135,7 @@ def save_graph_to_json(graph, display_names, paper_info, paper_links, filename):
         data['papers'][node] = {
             'title': display_names[node],
             'author': paper_info[node]['author'],
+            'pi': paper_info[node]['pi'],
             'year': paper_info[node]['year'],
             'url': paper_links[node]
         }
@@ -49,69 +148,66 @@ def get_decade_color(year):
     try:
         decade = (int(year) // 10) * 10
         color_map = {
-            1980: 'rgb(255, 99, 71)',
-            1990: 'rgb(34, 139, 34)',
-            2000: 'rgb(30, 144, 255)',
-            2010: 'rgb(255, 215, 0)'
+            1980: 'rgb(255, 99, 71)',   # Tomato
+            1990: 'rgb(34, 139, 34)',   # Forest Green
+            2000: 'rgb(30, 144, 255)',  # Dodger Blue
+            2010: 'rgb(255, 215, 0)',   # Gold
+            2020: 'rgb(138, 43, 226)'   # Blue Violet
         }
-        return color_map.get(decade, 'rgb(211, 211, 211)')
+        return color_map.get(decade, 'rgb(211, 211, 211)')  # Light Gray for unknown
     except:
         return 'rgb(211, 211, 211)'
 
+# Define a list of distinct colors for authors
+AUTHOR_COLORS = [
+    'rgb(255, 99, 71)',    # Tomato
+    'rgb(34, 139, 34)',    # Forest Green
+    'rgb(30, 144, 255)',   # Dodger Blue
+    'rgb(255, 215, 0)',    # Gold
+    'rgb(138, 43, 226)',   # Blue Violet
+    'rgb(255, 105, 180)',  # Hot Pink
+    'rgb(0, 128, 128)',    # Teal
+    'rgb(255, 140, 0)',    # Dark Orange
+    'rgb(147, 112, 219)',  # Medium Purple
+    'rgb(0, 100, 0)',      # Dark Green
+    'rgb(205, 92, 92)',    # Indian Red
+    'rgb(70, 130, 180)',   # Steel Blue
+    'rgb(218, 112, 214)',  # Orchid
+    'rgb(0, 139, 139)',    # Dark Cyan
+    'rgb(255, 69, 0)',     # Red Orange
+    'rgb(72, 61, 139)',    # Dark Slate Blue
+    'rgb(184, 134, 11)',   # Dark Goldenrod
+    'rgb(139, 69, 19)',    # Saddle Brown
+    'rgb(47, 79, 79)',     # Dark Slate Gray
+    'rgb(199, 21, 133)'    # Medium Violet Red
+]
+
 def get_author_color(author, color_map):
-    if author in color_map:
-        return color_map[author]
-    color = next(author_color_cycle)
-    color_map[author] = color
-    return color
-
-def display_paper_table(paper_data):
-    df = pd.DataFrame(paper_data).copy()
-
-    # Ensure required columns exist
-    for col in ['id', 'title', 'author', 'year', 'decade', 'link']:
-        if col not in df.columns:
-            df[col] = ""
-
-    # Safely convert links to HTML
-    df['link'] = df['link'].apply(lambda url: f'<a href="{url}" target="_blank">Link</a>' if isinstance(url, str) and url and url != "N/A" else "")
-
-    df = df[['id', 'title', 'author', 'year', 'decade', 'link']]
-    st.markdown("### 📚 Paper Library")
-    st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-
-def filter_papers(df):
-    st.sidebar.markdown("### 🔍 Filter Papers")
-
-    # Define filterable fields and their input types
-    filters = {
-        "title": st.sidebar.text_input("Search by Title"),
-        "author": st.sidebar.text_input("Search by Author"),
-        "year": st.sidebar.text_input("Search by Year"),
-        "decade": st.sidebar.text_input("Search by Decade"),
-    }
-
-    # Apply filters dynamically
-    filtered_df = df.copy()
-    for field, query in filters.items():
-        if query:
-            filtered_df = filtered_df[filtered_df[field].astype(str).str.contains(query, case=False, na=False)]
-
-    return filtered_df
-
-
+    """Assign a unique color to each author"""
+    if author not in color_map:
+        # Get all currently used colors
+        used_colors = set(color_map.values())
+        # Find the first available color that hasn't been used
+        for color in AUTHOR_COLORS:
+            if color not in used_colors:
+                color_map[author] = color
+                return color
+        # If all colors are used, create a slightly modified version of an existing color
+        base_color = AUTHOR_COLORS[len(color_map) % len(AUTHOR_COLORS)]
+        rgb_values = [int(x) for x in base_color[4:-1].split(',')]
+        # Modify the RGB values slightly
+        modified_rgb = [
+            (v + 30 * (len(color_map) // len(AUTHOR_COLORS))) % 256 
+            for v in rgb_values
+        ]
+        color_map[author] = f'rgb({modified_rgb[0]}, {modified_rgb[1]}, {modified_rgb[2]})'
+    return color_map[author]
 
 # ----------------- Graph Plotting -------------------
 def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mode):
-    # Define author color cycle
-    global author_color_cycle
-    author_color_cycle = itertools.cycle([ 
-        'rgb(255, 99, 71)', 'rgb(34, 139, 34)', 'rgb(30, 144, 255)', 
-        'rgb(255, 215, 0)', 'rgb(255, 105, 180)', 'rgb(75, 0, 130)', 
-        'rgb(255, 69, 0)', 'rgb(0, 128, 128)', 'rgb(138, 43, 226)', 
-        'rgb(255, 140, 0)'
-    ])
+    # Store the selected node in session state if it doesn't exist
+    if 'selected_node' not in st.session_state:
+        st.session_state.selected_node = None
 
     # Determine the layout for graph plotting
     if layout_choice == "spring":
@@ -130,69 +226,137 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
     color_groups = {}
     color_map = {}
 
-    if color_mode == "author":
-        if 'author_colors' not in st.session_state:
-            st.session_state.author_colors = {}
-        color_map = st.session_state.author_colors
-    elif color_mode == "decade":
-        if 'decade_colors' not in st.session_state:
-            st.session_state.decade_colors = {}
-        color_map = st.session_state.decade_colors
+    if color_mode == "First Author":
+        if 'first_author_colors' not in st.session_state:
+            st.session_state.first_author_colors = {}
+        color_map = st.session_state.first_author_colors
+    elif color_mode == "Principal Investigator":
+        if 'pi_colors' not in st.session_state:
+            st.session_state.pi_colors = {}
+        color_map = st.session_state.pi_colors
 
-    # Assign colors to nodes based on author or decade
+    # Get connected nodes if there's a selection
+    connected_nodes = set()
+    if st.session_state.selected_node:
+        connected_nodes = set(graph.successors(st.session_state.selected_node)) | set(graph.predecessors(st.session_state.selected_node))
+        connected_nodes.add(st.session_state.selected_node)
+
+    # Create edges with different colors based on selection
+    edge_traces = []
+    
+    # Function to create edge trace
+    def create_edge_trace(edges, color, width):
+        edge_x, edge_y = [], []
+        for src, dst in edges:
+            x0, y0 = pos[src]
+            x1, y1 = pos[dst]
+            edge_x.extend([x0, x1, None])
+            edge_y.extend([y0, y1, None])
+        
+        return go.Scatter(
+            x=edge_x, y=edge_y,
+            line=dict(width=width, color=color),
+            hoverinfo='none',
+            mode='lines',
+            showlegend=False
+        )
+
+    # Split edges into highlighted and non-highlighted
+    if st.session_state.selected_node:
+        highlighted_edges = [(u, v) for u, v in graph.edges() 
+                           if u == st.session_state.selected_node or v == st.session_state.selected_node]
+        normal_edges = [(u, v) for u, v in graph.edges() 
+                       if u != st.session_state.selected_node and v != st.session_state.selected_node]
+        
+        # Add normal edges (thinner, lighter)
+        if normal_edges:
+            edge_traces.append(create_edge_trace(normal_edges, 'rgba(180,180,180,0.2)', 1))
+        
+        # Add highlighted edges (thicker, darker)
+        if highlighted_edges:
+            edge_traces.append(create_edge_trace(highlighted_edges, 'rgba(50,50,50,0.8)', 2))
+    else:
+        # If no node is selected, show all edges normally
+        edge_traces.append(create_edge_trace(graph.edges(), 'rgba(128,128,128,0.6)', 1))
+
+    # Create node traces with customdata for click events
+    node_traces = []
     for node in graph.nodes():
-        author = paper_info.get(node, {}).get('author', 'Unknown')
+        first_author = paper_info.get(node, {}).get('author', 'Unknown')
+        pi = paper_info.get(node, {}).get('pi', 'Unknown')
         year = paper_info.get(node, {}).get('year', 'Unknown')
-        label = author if color_mode == "author" else f"{(int(year)//10)*10}s" if str(year).isdigit() else "Unknown"
-
-        if color_mode == "decade":
+        all_authors = paper_info.get(node, {}).get('all_authors', [])
+        
+        if color_mode == "First Author":
+            label = first_author
+            color = get_author_color(first_author, color_map)
+        elif color_mode == "Principal Investigator":
+            label = pi
+            color = get_author_color(pi, color_map)
+        else:  # Decade mode
+            label = f"{(int(year)//10)*10}s" if str(year).isdigit() else "Unknown"
             color = get_decade_color(year)
-        else:
-            color = get_author_color(author, color_map)
 
         if label not in color_groups:
-            color_groups[label] = {'x': [], 'y': [], 'text': [], 'color': color}
+            color_groups[label] = {
+                'x': [], 'y': [], 'text': [], 'color': color,
+                'size': [], 'opacity': [], 'customdata': []
+            }
 
         x, y = pos[node]
         title = display_names.get(node, node)
-        text = f"{title}<br>{author} ({year})<br><b>Paper ID:</b> {node}"
+        
+        # Create hover text with all author information
+        author_text = f"First Author: {first_author}<br>PI: {pi}"
+        if all_authors:
+            author_text += f"<br>All Authors: {', '.join(all_authors)}"
+            
+        text = f"{title}<br>{author_text}<br>Year: {year}<br><b>Paper ID:</b> {node}"
+        
+        # Adjust node size and opacity based on selection
+        size = 12
+        opacity = 1.0
+        
+        if st.session_state.selected_node:
+            if node == st.session_state.selected_node:
+                size = 20  # Make selected node larger
+                opacity = 1.0
+            elif node in connected_nodes:
+                size = 16  # Make connected nodes slightly larger
+                opacity = 0.9
+            else:
+                size = 12  # Keep normal size for unconnected nodes
+                opacity = 0.3  # Make unconnected nodes slightly transparent
+        
         color_groups[label]['x'].append(x)
         color_groups[label]['y'].append(y)
         color_groups[label]['text'].append(text)
+        color_groups[label]['size'].append(size)
+        color_groups[label]['opacity'].append(opacity)
+        color_groups[label]['customdata'].append(node)
 
-    # Create edges
-    edge_x, edge_y = [], []
-    for src, dst in graph.edges():
-        x0, y0 = pos[src]
-        x1, y1 = pos[dst]
-        edge_x.extend([x0, x1, None])
-        edge_y.extend([y0, y1, None])
-
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=1, color='#888'),
-        hoverinfo='none',
-        mode='lines',
-        showlegend=False
-    )
-
-    node_traces = []
+    # Create node traces
     for label, group in color_groups.items():
-        node_traces.append(go.Scatter(
+        node_trace = go.Scatter(
             x=group['x'], y=group['y'],
             mode='markers',
             hoverinfo='text',
             text=group['text'],
+            customdata=group['customdata'],
             marker=dict(
                 color=group['color'],
-                size=12,
+                size=group['size'],
+                opacity=group['opacity'],
                 line=dict(width=2, color='DarkSlateGrey')
             ),
             name=label
-        ))
+        )
+        node_traces.append(node_trace)
 
-    fig = go.Figure(data=[edge_trace] + node_traces)
+    # Create the figure with all traces
+    fig = go.Figure(data=edge_traces + node_traces)
 
+    # Update layout with click event handling
     fig.update_layout(
         title='',
         font=dict(size=16, color='black', family='Times New Roman'),
@@ -209,7 +373,9 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
             bgcolor='white',
             bordercolor='black',
             borderwidth=1
-        )
+        ),
+        clickmode='event',
+        dragmode='pan'  # Make it easier to click nodes
     )
 
     return fig
@@ -218,132 +384,144 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
 st.set_page_config(layout='wide')
 st.title("Citagraph3")
 
-# Ask for password only if admin mode is selected
-viewer_option = st.sidebar.radio("Proceed as Viewer", ["Observer Mode", "Admin Mode"])
-
-if viewer_option == "Admin Mode":
-    # Display password box only when Admin Mode is selected
-    password = st.text_input("Enter Admin Password:", type="password")
-    if password == ADMIN_PASSWORD:
-        is_admin = True
-        st.sidebar.success("You are now in Admin Mode.")
-    else:
-        is_admin = False
-        if password:
-            st.sidebar.error("Invalid password. Please try again.")
-else:
-    is_admin = False
-    st.sidebar.success("Observer Mode.")
-
 # Load Graph Data
 graph, display_names, paper_info, paper_links = load_graph_from_json(DATA_FILE)
 
-# Sidebar: Admin Controls (Visible only in Admin Mode)
-if is_admin:
-    with st.sidebar.expander("Add New Paper"):
-        new_id_input = st.text_input("Paper ID (leave blank to auto-assign)")
-        new_title = st.text_input("Title")
-        new_author = st.text_input("Author")
-        new_year = st.text_input("Year")
-        new_url = st.text_input("URL")
-
-        if st.button("Add Paper"):
-            # Auto-generate Paper ID if no ID is provided
-            if new_id_input.strip() == "":
-                # Find the next available numeric ID by checking existing papers and assigning a formatted ID
-                existing_ids = {str(id) for id in graph.nodes}
-                i = 1
-                while f"{i:04d}" in existing_ids:  # Use 4-digit format with leading zeros
-                    i += 1
-                new_id = f"{i:04d}"  # Generate the ID in the same format as existing ones
+# Sidebar Controls
+with st.sidebar:
+    st.header("Paper Management")
+    
+    # Auto-Add Paper with Citations
+    with st.expander("Auto-Add Paper with Citations", expanded=True):
+        paper_doi = st.text_input("Enter Paper DOI")
+        if st.button("Fetch and Add Paper"):
+            if paper_doi:
+                with st.spinner('Fetching paper data...'):
+                    if add_paper_with_references(graph, display_names, paper_info, paper_links, paper_doi):
+                        save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+                        st.success("Paper and its citations added successfully!")
+                    else:
+                        st.error("Failed to fetch paper data. Please check the DOI and try again.")
             else:
-                new_id = new_id_input.strip()
+                st.warning("Please enter a DOI")
 
-            # Now add the paper with the appropriate ID
-            graph.add_node(new_id)
-            display_names[new_id] = new_title
-            paper_info[new_id] = {'author': new_author, 'year': new_year}
-            paper_links[new_id] = new_url
-            save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-            st.success(f"Added paper '{new_title}' with ID {new_id}")
+    # Edit/Delete Paper
+    with st.expander("Edit/Delete Paper", expanded=False):
+        if graph.number_of_nodes() > 0:
+            selected_id = st.selectbox("Select Paper", list(graph.nodes))
+            if selected_id:
+                display_names[selected_id] = st.text_input("Edit Title", value=display_names[selected_id])
+                paper_info[selected_id]['author'] = st.text_input("Edit First Author", value=paper_info[selected_id]['author'])
+                paper_info[selected_id]['pi'] = st.text_input("Edit PI", value=paper_info[selected_id].get('pi', 'Unknown'))
+                paper_info[selected_id]['year'] = st.text_input("Edit Year", value=paper_info[selected_id]['year'])
+                paper_links[selected_id] = st.text_input("Edit URL", value=paper_links[selected_id])
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Save Changes"):
+                        save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+                        st.success("Changes saved")
+                with col2:
+                    if st.button("Delete Paper"):
+                        graph.remove_node(selected_id)
+                        display_names.pop(selected_id, None)
+                        paper_info.pop(selected_id, None)
+                        paper_links.pop(selected_id, None)
+                        save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
+                        st.success("Paper deleted")
+                        st.rerun()
+        else:
+            st.info("No papers available to edit")
 
-
-
-
-
-    with st.sidebar.expander("Edit/Delete Paper"):
-        selected_id = st.selectbox("Select Paper to Edit/Delete", list(graph.nodes))
-        if selected_id:
-            display_names[selected_id] = st.text_input("Edit Title", value=display_names[selected_id])
-            paper_info[selected_id]['author'] = st.text_input("Edit Author", value=paper_info[selected_id]['author'])
-            paper_info[selected_id]['year'] = st.text_input("Edit Year", value=paper_info[selected_id]['year'])
-            paper_links[selected_id] = st.text_input("Edit URL", value=paper_links[selected_id])
-            if st.button("Save Changes"):
-                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                st.success("Changes saved")
-            if st.button("Delete Paper"):
-                graph.remove_node(selected_id)
-                display_names.pop(selected_id, None)
-                paper_info.pop(selected_id, None)
-                paper_links.pop(selected_id, None)
-                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                st.success("Paper deleted")
-
-    with st.sidebar.expander("Edit Citations"):
-        source_paper = st.selectbox("Select Source Paper", list(graph.nodes))
-        target_paper = st.selectbox("Select Target Paper", list(graph.nodes))
-        if st.button("Add Citation"):
-            if not graph.has_edge(source_paper, target_paper):
-                graph.add_edge(source_paper, target_paper)
-                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                st.success(f"Added citation from {source_paper} to {target_paper}")
-            else:
-                st.warning(f"Citation already exists from {source_paper} to {target_paper}")
-        if st.button("Remove Citation"):
-            if graph.has_edge(source_paper, target_paper):
-                graph.remove_edge(source_paper, target_paper)
-                save_graph_to_json(graph, display_names, paper_info, paper_links, DATA_FILE)
-                st.success(f"Removed citation from {source_paper} to {target_paper}")
-            else:
-                st.warning(f"No citation exists from {source_paper} to {target_paper}")
-
-# Sidebar: Graph Display Settings (Visible for both Admin and Viewer)
-with st.sidebar.expander("Graph Display Settings", expanded=True):
+    # Graph Display Settings
+    st.header("Graph Settings")
     layout_choice = st.radio("Layout", ["spring", "circular", "kamada-kawai", "random", "fruchterman-reingold"])
-    color_mode = st.radio("Color Nodes By", ["author", "decade"])
+    color_mode = st.radio("Color Nodes By", ["First Author", "Principal Investigator", "Decade"])
 
-# Main Graph
+# Main Graph Area
 if graph.number_of_nodes() == 0:
-    st.warning("No data in graph. Add papers using the sidebar.")
+    st.info("No papers in the graph. Add papers using the sidebar controls.")
 else:
     fig = draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mode)
-    st.plotly_chart(fig, use_container_width=True, height=800, config={'displayModeBar': False})
+    
+    # Configure click events
+    for trace in fig.data:
+        if trace.mode == "markers":  # Only add click events to node traces
+            trace.on_click(handle_node_click)
+    
+    # Update layout to enable click events
+    fig.update_layout(
+        clickmode='event',
+        dragmode='pan',  # Make it easier to click nodes
+        hovermode='closest'
+    )
+    
+    # Display the plot
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        height=800,
+        key="graph"
+    )
 
-# ----------------- Show Paper Information -------------------
-st.subheader("Paper Library")
+    # Add a button to clear selection
+    if st.session_state.selected_node:
+        if st.button("Clear Selection"):
+            st.session_state.selected_node = None
+            st.rerun()
 
-# Create a DataFrame for papers
-papers_data = []
-for paper_id in graph.nodes:
-    papers_data.append({
-        "id": paper_id,
-        "title": display_names.get(paper_id, "Unknown"),
-        "author": paper_info.get(paper_id, {}).get('author', "Unknown"),
-        "year": paper_info.get(paper_id, {}).get('year', "Unknown"),
-        "link": paper_links.get(paper_id, "N/A")
-    })
+    # Paper Library Table
+    papers_data = []
+    for paper_id in graph.nodes:
+        papers_data.append({
+            "DOI": paper_id,
+            "Title": display_names.get(paper_id, "Unknown"),
+            "1st Author": paper_info.get(paper_id, {}).get('author', "Unknown"),
+            "PI": paper_info.get(paper_id, {}).get('pi', "Unknown"),
+            "Year": paper_info.get(paper_id, {}).get('year', "Unknown"),
+            "Link": paper_links.get(paper_id, "N/A")
+        })
 
-if papers_data:
-    df = pd.DataFrame(papers_data)
-    df["decade"] = df["year"].apply(lambda y: f"{(int(y)//10)*10}s" if str(y).isdigit() else "Unknown")
+    if papers_data:
+        df = pd.DataFrame(papers_data)
+        # Fix the case sensitivity issue by using the correct column name
+        df["Decade"] = df["Year"].apply(lambda y: f"{(int(y)//10)*10}s" if str(y).isdigit() else "Unknown")
+        
+        # Display filters and table
+        st.header("Paper Library")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            title_filter = st.text_input("Filter by Title")
+        with col2:
+            author_filter = st.text_input("Filter by First Author")
+        with col3:
+            pi_filter = st.text_input("Filter by PI")
+        with col4:
+            year_filter = st.text_input("Filter by Year")
+        with col5:
+            decade_filter = st.text_input("Filter by Decade")
 
-    # Apply sidebar filters
-    filtered_df = filter_papers(df)
+        # Apply filters
+        filtered_df = df.copy()
+        if title_filter:
+            filtered_df = filtered_df[filtered_df['Title'].str.contains(title_filter, case=False, na=False)]
+        if author_filter:
+            filtered_df = filtered_df[filtered_df['1st Author'].str.contains(author_filter, case=False, na=False)]
+        if pi_filter:
+            filtered_df = filtered_df[filtered_df['PI'].str.contains(pi_filter, case=False, na=False)]
+        if year_filter:
+            filtered_df = filtered_df[filtered_df['Year'].str.contains(year_filter, case=False, na=False)]
+        if decade_filter:
+            filtered_df = filtered_df[filtered_df['Decade'].str.contains(decade_filter, case=False, na=False)]
 
-    # Show table
-    display_paper_table(filtered_df.to_dict(orient='records'))
-else:
-    st.write("No papers available.")
+        # Convert links to HTML
+        filtered_df['Link'] = filtered_df['Link'].apply(
+            lambda url: f'<a href="{url}" target="_blank">Link</a>' if isinstance(url, str) and url and url != "N/A" else ""
+        )
+
+        # Display table with both First Author and PI
+        filtered_df = filtered_df[['DOI', 'Title', '1st Author', 'PI', 'Year', 'Decade', 'Link']]
+        st.write(filtered_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 
 
