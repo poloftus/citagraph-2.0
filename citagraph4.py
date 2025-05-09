@@ -9,7 +9,7 @@ import requests
 import time
 from streamlit.components.v1 import html
 
-DATA_FILE = 'citation_data3.json'
+DATA_FILE = 'citation_data.json'
 
 # Initialize session state
 if 'selected_node' not in st.session_state:
