@@ -147,16 +147,20 @@ def save_graph_to_json(graph, display_names, paper_info, paper_links, filename):
 def get_decade_color(year):
     try:
         decade = (int(year) // 10) * 10
+        # Rainbow progression from red (oldest) to violet (newest)
         color_map = {
-            1980: 'rgb(255, 99, 71)',   # Tomato
-            1990: 'rgb(34, 139, 34)',   # Forest Green
-            2000: 'rgb(30, 144, 255)',  # Dodger Blue
-            2010: 'rgb(255, 215, 0)',   # Gold
-            2020: 'rgb(138, 43, 226)'   # Blue Violet
+            1960: 'rgb(255, 0, 0)',      # Red
+            1970: 'rgb(255, 127, 0)',    # Orange
+            1980: 'rgb(255, 255, 0)',    # Yellow
+            1990: 'rgb(0, 255, 0)',      # Green
+            2000: 'rgb(0, 0, 255)',      # Blue
+            2010: 'rgb(75, 0, 130)',     # Indigo
+            2020: 'rgb(148, 0, 211)',    # Violet
+            2030: 'rgb(200, 0, 255)'     # Future papers (purple)
         }
-        return color_map.get(decade, 'rgb(211, 211, 211)')  # Light Gray for unknown
+        return color_map.get(decade, 'rgb(128, 128, 128)')  # Gray for unknown decades
     except:
-        return 'rgb(211, 211, 211)'
+        return 'rgb(128, 128, 128)'  # Gray for invalid years
 
 # Define a list of distinct colors for authors
 AUTHOR_COLORS = [
@@ -281,73 +285,141 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
 
     # Create node traces with customdata for click events
     node_traces = []
-    for node in graph.nodes():
-        first_author = paper_info.get(node, {}).get('author', 'Unknown')
-        pi = paper_info.get(node, {}).get('pi', 'Unknown')
-        year = paper_info.get(node, {}).get('year', 'Unknown')
-        all_authors = paper_info.get(node, {}).get('all_authors', [])
+    
+    # For decade mode, create traces in chronological order
+    if color_mode == "Decade":
+        # Create a dictionary to store nodes by decade
+        decade_groups = {}
+        for node in graph.nodes():
+            year = paper_info.get(node, {}).get('year', 'Unknown')
+            try:
+                decade = (int(year) // 10) * 10
+                label = f"{decade}s"
+            except:
+                decade = float('inf')  # Put unknown at the end
+                label = "Unknown"
+            
+            if label not in decade_groups:
+                decade_groups[label] = {
+                    'x': [], 'y': [], 'text': [], 'color': get_decade_color(year),
+                    'size': [], 'opacity': [], 'customdata': []
+                }
+            
+            x, y = pos[node]
+            title = display_names.get(node, node)
+            first_author = paper_info.get(node, {}).get('author', 'Unknown')
+            pi = paper_info.get(node, {}).get('pi', 'Unknown')
+            
+            # Create hover text with just first author and PI information
+            text = f"{title}<br>First Author: {first_author}<br>PI: {pi}<br>Year: {year}<br><b>Paper ID:</b> {node}"
+            
+            # Adjust node size and opacity based on selection
+            size = 12
+            opacity = 1.0
+            if st.session_state.selected_node:
+                if node == st.session_state.selected_node:
+                    size = 20  # Make selected node larger
+                    opacity = 1.0
+                elif node in connected_nodes:
+                    size = 16  # Make connected nodes slightly larger
+                    opacity = 0.9
+                else:
+                    size = 12  # Keep normal size for unconnected nodes
+                    opacity = 0.3  # Make unconnected nodes slightly transparent
+            
+            decade_groups[label]['x'].append(x)
+            decade_groups[label]['y'].append(y)
+            decade_groups[label]['text'].append(text)
+            decade_groups[label]['size'].append(size)
+            decade_groups[label]['opacity'].append(opacity)
+            decade_groups[label]['customdata'].append(node)
         
-        if color_mode == "First Author":
-            label = first_author
-            color = get_author_color(first_author, color_map)
-        elif color_mode == "Principal Investigator":
-            label = pi
-            color = get_author_color(pi, color_map)
-        else:  # Decade mode
-            label = f"{(int(year)//10)*10}s" if str(year).isdigit() else "Unknown"
-            color = get_decade_color(year)
+        # Add traces in chronological order
+        sorted_decades = sorted([d for d in decade_groups.keys() if d != "Unknown"])
+        if "Unknown" in decade_groups:
+            sorted_decades.append("Unknown")
+        
+        for decade in sorted_decades:
+            group = decade_groups[decade]
+            node_trace = go.Scatter(
+                x=group['x'], y=group['y'],
+                mode='markers',
+                hoverinfo='text',
+                text=group['text'],
+                customdata=group['customdata'],
+                marker=dict(
+                    color=group['color'],
+                    size=group['size'],
+                    opacity=group['opacity'],
+                    line=dict(width=2, color='DarkSlateGrey')
+                ),
+                name=decade
+            )
+            node_traces.append(node_trace)
+    
+    else:  # First Author or PI mode
+        for node in graph.nodes():
+            first_author = paper_info.get(node, {}).get('author', 'Unknown')
+            pi = paper_info.get(node, {}).get('pi', 'Unknown')
+            year = paper_info.get(node, {}).get('year', 'Unknown')
+            
+            if color_mode == "First Author":
+                label = first_author
+                color = get_author_color(first_author, color_map)
+            else:  # Principal Investigator mode
+                label = pi
+                color = get_author_color(pi, color_map)
 
-        if label not in color_groups:
-            color_groups[label] = {
-                'x': [], 'y': [], 'text': [], 'color': color,
-                'size': [], 'opacity': [], 'customdata': []
-            }
+            if label not in color_groups:
+                color_groups[label] = {
+                    'x': [], 'y': [], 'text': [], 'color': color,
+                    'size': [], 'opacity': [], 'customdata': []
+                }
 
-        x, y = pos[node]
-        title = display_names.get(node, node)
-        
-        # Create hover text with just first author and PI information
-        text = f"{title}<br>First Author: {first_author}<br>PI: {pi}<br>Year: {year}<br><b>Paper ID:</b> {node}"
-        
-        # Adjust node size and opacity based on selection
-        size = 12
-        opacity = 1.0
-        
-        if st.session_state.selected_node:
-            if node == st.session_state.selected_node:
-                size = 20  # Make selected node larger
-                opacity = 1.0
-            elif node in connected_nodes:
-                size = 16  # Make connected nodes slightly larger
-                opacity = 0.9
-            else:
-                size = 12  # Keep normal size for unconnected nodes
-                opacity = 0.3  # Make unconnected nodes slightly transparent
-        
-        color_groups[label]['x'].append(x)
-        color_groups[label]['y'].append(y)
-        color_groups[label]['text'].append(text)
-        color_groups[label]['size'].append(size)
-        color_groups[label]['opacity'].append(opacity)
-        color_groups[label]['customdata'].append(node)
+            x, y = pos[node]
+            title = display_names.get(node, node)
+            
+            # Create hover text with just first author and PI information
+            text = f"{title}<br>First Author: {first_author}<br>PI: {pi}<br>Year: {year}<br><b>Paper ID:</b> {node}"
+            
+            # Adjust node size and opacity based on selection
+            size = 12
+            opacity = 1.0
+            if st.session_state.selected_node:
+                if node == st.session_state.selected_node:
+                    size = 20  # Make selected node larger
+                    opacity = 1.0
+                elif node in connected_nodes:
+                    size = 16  # Make connected nodes slightly larger
+                    opacity = 0.9
+                else:
+                    size = 12  # Keep normal size for unconnected nodes
+                    opacity = 0.3  # Make unconnected nodes slightly transparent
+            
+            color_groups[label]['x'].append(x)
+            color_groups[label]['y'].append(y)
+            color_groups[label]['text'].append(text)
+            color_groups[label]['size'].append(size)
+            color_groups[label]['opacity'].append(opacity)
+            color_groups[label]['customdata'].append(node)
 
-    # Create node traces
-    for label, group in color_groups.items():
-        node_trace = go.Scatter(
-            x=group['x'], y=group['y'],
-            mode='markers',
-            hoverinfo='text',
-            text=group['text'],
-            customdata=group['customdata'],
-            marker=dict(
-                color=group['color'],
-                size=group['size'],
-                opacity=group['opacity'],
-                line=dict(width=2, color='DarkSlateGrey')
-            ),
-            name=label
-        )
-        node_traces.append(node_trace)
+        # Create node traces for author/PI mode
+        for label, group in color_groups.items():
+            node_trace = go.Scatter(
+                x=group['x'], y=group['y'],
+                mode='markers',
+                hoverinfo='text',
+                text=group['text'],
+                customdata=group['customdata'],
+                marker=dict(
+                    color=group['color'],
+                    size=group['size'],
+                    opacity=group['opacity'],
+                    line=dict(width=2, color='DarkSlateGrey')
+                ),
+                name=label
+            )
+            node_traces.append(node_trace)
 
     # Create the figure with all traces
     fig = go.Figure(data=edge_traces + node_traces)
@@ -370,7 +442,6 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
             bordercolor='black',
             borderwidth=1
         ),
-        clickmode='event',
         dragmode='pan'  # Make it easier to click nodes
     )
 
@@ -379,6 +450,10 @@ def draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mod
 # ----------------- Streamlit UI -------------------
 st.set_page_config(layout='wide')
 st.title("Citagraph3")
+
+# Initialize session state for click handling
+if 'clicked_node' not in st.session_state:
+    st.session_state.clicked_node = None
 
 # Load Graph Data
 graph, display_names, paper_info, paper_links = load_graph_from_json(DATA_FILE)
@@ -440,18 +515,6 @@ if graph.number_of_nodes() == 0:
 else:
     fig = draw_graph_plotly(graph, display_names, paper_info, layout_choice, color_mode)
     
-    # Configure click events
-    for trace in fig.data:
-        if trace.mode == "markers":  # Only add click events to node traces
-            trace.on_click(handle_node_click)
-    
-    # Update layout to enable click events
-    fig.update_layout(
-        clickmode='event',
-        dragmode='pan',  # Make it easier to click nodes
-        hovermode='closest'
-    )
-    
     # Display the plot
     st.plotly_chart(
         fig,
@@ -480,7 +543,7 @@ else:
 
     if papers_data:
         df = pd.DataFrame(papers_data)
-        # Fix the case sensitivity issue by using the correct column name
+        # Create decade from Year column
         df["Decade"] = df["Year"].apply(lambda y: f"{(int(y)//10)*10}s" if str(y).isdigit() else "Unknown")
         
         # Display filters and table
@@ -518,6 +581,60 @@ else:
         # Display table with both First Author and PI
         filtered_df = filtered_df[['DOI', 'Title', '1st Author', 'PI', 'Year', 'Decade', 'Link']]
         st.write(filtered_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+        # Citation Connections Section
+        st.header("Citation Connections")
+        selected_paper = st.selectbox("Select a paper to view its connections", list(graph.nodes()), format_func=lambda x: display_names[x])
+
+        if selected_paper:
+            # Get citing papers (papers that cite the selected paper)
+            citing_papers = list(graph.predecessors(selected_paper))
+            # Get cited papers (papers cited by the selected paper)
+            cited_papers = list(graph.successors(selected_paper))
+
+            # Create DataFrames for citing and cited papers
+            citing_data = []
+            for paper_id in citing_papers:
+                citing_data.append({
+                    "DOI": paper_id,
+                    "Title": display_names.get(paper_id, "Unknown"),
+                    "1st Author": paper_info.get(paper_id, {}).get('author', "Unknown"),
+                    "PI": paper_info.get(paper_id, {}).get('pi', "Unknown"),
+                    "Year": paper_info.get(paper_id, {}).get('year', "Unknown"),
+                    "Link": paper_links.get(paper_id, "N/A")
+                })
+
+            cited_data = []
+            for paper_id in cited_papers:
+                cited_data.append({
+                    "DOI": paper_id,
+                    "Title": display_names.get(paper_id, "Unknown"),
+                    "1st Author": paper_info.get(paper_id, {}).get('author', "Unknown"),
+                    "PI": paper_info.get(paper_id, {}).get('pi', "Unknown"),
+                    "Year": paper_info.get(paper_id, {}).get('year', "Unknown"),
+                    "Link": paper_links.get(paper_id, "N/A")
+                })
+
+            # Display citation information
+            st.subheader(f"Papers citing \"{display_names[selected_paper]}\"")
+            if citing_data:
+                citing_df = pd.DataFrame(citing_data)
+                citing_df['Link'] = citing_df['Link'].apply(
+                    lambda url: f'<a href="{url}" target="_blank">Link</a>' if isinstance(url, str) and url != "N/A" else ""
+                )
+                st.write(citing_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+            else:
+                st.info("No papers cite this paper in the database")
+
+            st.subheader(f"Papers cited by \"{display_names[selected_paper]}\"")
+            if cited_data:
+                cited_df = pd.DataFrame(cited_data)
+                cited_df['Link'] = cited_df['Link'].apply(
+                    lambda url: f'<a href="{url}" target="_blank">Link</a>' if isinstance(url, str) and url != "N/A" else ""
+                )
+                st.write(cited_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+            else:
+                st.info("This paper doesn't cite any papers in the database")
 
 
 
