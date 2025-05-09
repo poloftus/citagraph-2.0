@@ -174,6 +174,13 @@
       "pi": "Waller",
       "year": "2018",
       "url": "https://doi.org/10.1038/nature25978"
+    },
+    "10.1038/nchem.2336": {
+      "title": "An eight-step synthesis of epicolactone reveals its biosynthetic origin",
+      "author": "Ellerbrock",
+      "pi": "Trauner",
+      "year": "2015",
+      "url": "https://doi.org/10.1038/nchem.2336"
     }
   },
   "citations": {
@@ -302,6 +309,7 @@
       "10.1002/chem.201604556",
       "10.1021/acscentsci.7b00064",
       "10.1021/acscentsci.7b00355"
-    ]
+    ],
+    "10.1038/nchem.2336": []
   }
 }
