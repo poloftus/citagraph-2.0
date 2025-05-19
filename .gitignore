@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Local development settings
+.env
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Project specific files
+*.pyc
+*.bak
+*.tmp 
